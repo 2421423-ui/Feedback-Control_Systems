@@ -1,30 +1,41 @@
 #include <Arduino.h>
 #include <Servo.h>
 
-Servo myServo;            
-const int servoPin = 9;   
+Servo myServo;
+const int servoPin = 9;
+String readString;
+int currentAngle = 90;
 
 void setup() {
-  myServo.attach(servoPin); 
-  Serial.begin(9600);       
-  myServo.write(0);
-  Serial.println("Arduino: Ready for degree input (0-180).");
+  Serial.begin(9600);
+  myServo.attach(servoPin);
+  myServo.write(currentAngle);
+  Serial.println("System Ready.");
 }
 
 void loop() {
-  if (Serial.available() > 0) {
-    int angle = Serial.parseInt();
-    while(Serial.available() > 0) { Serial.read(); }
-
-    if (angle >= 0 && angle <= 180) {
-      myServo.write(angle);
-      Serial.print("SUCCESS: Servo moved to ");
-      Serial.print(angle);
-      Serial.println(" degrees.");
-    } else {
-      Serial.print("ERROR: Invalid angle (");
-      Serial.print(angle);
-      Serial.println("). Please send 0-180.");
+  while (Serial.available()) {
+    char c = Serial.read();
+    readString += c;
+    if (readString.length() > 5) {
+      readString = "";
+      break;
     }
+    delay(1);
+  }
+
+  if (readString.length() > 0 && readString.endsWith("\n")) {
+    readString.trim();
+    int receivedAngle = readString.toInt();
+
+    if (receivedAngle >= 0 && receivedAngle <= 180) {
+      if (receivedAngle != currentAngle) {
+        myServo.write(receivedAngle);
+        currentAngle = receivedAngle;
+        Serial.print("Moved to: ");
+        Serial.println(currentAngle);
+      }
+    }
+    readString = "";
   }
 }
